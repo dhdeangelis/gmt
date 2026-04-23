@@ -4701,7 +4701,7 @@ bool gmtlib_B_is_frame (struct GMT_CTRL *GMT, char *in) {
 	if (strstr (in, "+u")) return false;	/* Found a +u so likely axis */
 	if (in[0] != 'z' && strchr ("WESNZwenzlrbtu", in[0])) return true;	/* Found one of the side specifiers so likely frame (check on z since -Bzaf could trick it) */
 	if (in[0] == 's' && (in[1] == 0 || strchr ("WESNZwenzlrbtu", in[1]) != NULL)) return true;	/* Found -Bs (just draw south axis) or -Bs<another axis flag> */
-	if (in[0] == 'z' && (in[1] == 0 || strchr ("WESNwenlrbtu", in[1]) != NULL)) return true;	/* Found -Bz in frame context, e.g. -Bzwn */
+	if (in[0] == 'z' && in[1] != 0 && strchr ("WESNwenlrbtu", in[1]) != NULL) return true;	/* Found -Bz in frame context, e.g. -Bzwn (bare -Bz is axis context) */
 	return false;	/* Cannot be frame */
 }
 
@@ -18648,6 +18648,13 @@ int gmt_parse_common_options (struct GMT_CTRL *GMT, char *list, char option, cha
 					else	/* Keep what we got */
 						strncpy (args, item, GMT_LEN256-1);
 					error = gmtlib_parse_B_option (GMT, args);
+				}
+				else if (GMT->common.J.zactive && !GMT->current.map.frame.set[GMT_Z] && item[q] == 'z' && item[q+1] == '\0') {
+					/* Classic mode: expand bare -Bz to -Bzaf when z-axis is active but has no annotation settings yet */
+					char args[GMT_LEN256] = {""};
+					if (q) args[0] = item[0];
+					strcat(args, "zaf");
+					error = gmtlib_parse_B_option(GMT, args);
 				}
 				else
 					error = gmtlib_parse_B_option (GMT, item);
